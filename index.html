@@ -491,9 +491,8 @@
           LIKERT.forEach(opt => {
             const b = document.createElement("button");
             b.className = "btn"; b.textContent = String(opt.value); b.title = opt.label;
-            \1
-              if (!GA_SURVEY_STARTED) { GA_SURVEY_STARTED = true; gaEvent('survey_started', {}); }
-    
+            b.addEventListener("click", () => {
+              answers[it.id] = opt.value;
               Array.from(grid.children).forEach(ch => ch.classList.remove("sel"));
               b.classList.add("sel");
               updateProgress();
@@ -579,7 +578,6 @@
           const old = copyBtn.textContent;
           copyBtn.textContent = "Copied";
           setTimeout(()=>copyBtn.textContent=old, 1200);
-          gaEvent('badge_copied', {});
         });
       }
 
@@ -629,18 +627,13 @@
         const levelsBlock = `<div class="decodeGrid" style="margin-top:6px">${subBits}</div>`;
 
         checkOut.innerHTML = parts + levelsBlock;
-        try { gaEvent('code_checked', { fit: fitText.toLowerCase().split(' ')[0], delta: delta, their_score: theirScore, your_score: yourScore }); } catch(e) {}
       }
 
       function renderResults() {
         if (!ageValid()) { resultsCard.classList.add("hidden"); return; }
         const avgs = computeSubscaleAverages();
-        \1
-        if (!GA_SURVEY_COMPLETED) {
-          GA_SURVEY_COMPLETED = true;
-          try { gaEvent('survey_completed', { readiness_score: score100, readiness_band: bandObj.key || '' }); } catch(e) {}
-        }
-    const p0_geo = computeGeoBaseRate();
+        const { score100, bandObj } = computeReadiness(avgs);
+        const p0_geo = computeGeoBaseRate();
         const p0_adj = computeDurationAdjustedBaseRate(p0_geo);
         const bump = computeInitiatorBump();
         const { p } = computeSinglePersonProbability(avgs, p0_adj, bump);
@@ -683,7 +676,6 @@
         updateProgress();
         resultsCard.classList.add("hidden");
         window.scrollTo({ top: 0, behavior: "smooth" });
-        try { gaEvent('survey_reset', {}); } catch(e) {}
       });
       citySel.addEventListener("change", () => { if (Object.keys(answers).length === totalItems) renderResults(); });
       poolSel.addEventListener("change", () => { if (Object.keys(answers).length === totalItems) renderResults(); });
@@ -711,9 +703,8 @@
             b.className = "btn";
             b.textContent = String(opt.value);
             b.title = opt.label;
-            \1
-              if (!GA_SURVEY_STARTED) { GA_SURVEY_STARTED = true; gaEvent('survey_started', {}); }
-    
+            b.addEventListener("click", () => {
+              answers[it.id] = opt.value;
               Array.from(grid.children).forEach(ch => ch.classList.remove("sel"));
               b.classList.add("sel");
               updateProgress();
