@@ -285,6 +285,31 @@
           <ul id="tipsList" class="sub"></ul>
         </div>
 
+        
+        <div class="card" style="margin-top:12px">
+          <strong>Save your badge + email</strong>
+          <div class="muted">Enter your email and consent so we can save your badge code. This helps us improve Ready to Relate and lets us send you product updates.</div>
+          <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:8px; margin-top:8px; align-items:end;">
+            <div>
+              <label for="emailInput">Email address</label>
+              <input id="emailInput" type="email" placeholder="you@example.com" style="width:100%; border:1px solid #cbb37a; border-radius:10px; padding:10px;" />
+              <div class="inline-check">
+                <input id="consentChk" type="checkbox" />
+                <label for="consentChk" style="margin:0">I agree to receive emails from Ready to Relate. <a href="#" id="privacyLink2">Privacy</a></label>
+              </div>
+            </div>
+            <div>
+              <label for="cityInput">City (optional)</label>
+              <input id="cityInput" type="text" placeholder="e.g., Detroit" style="width:100%; border:1px solid #cbb37a; border-radius:10px; padding:10px;" />
+            </div>
+            <div>
+              <button class="btn2 primary" id="submitEmailBtn" disabled>Save my email</button>
+              <div id="submitEmailMsg" class="muted" style="margin-top:6px"></div>
+            </div>
+          </div>
+        </div>
+
+
         <div class="card" style="margin-top:12px">
           <strong>Check a code against your result</strong>
           <div class="muted">Paste their 5-digit code. We’ll show both scores and your fit.</div>
@@ -1010,6 +1035,173 @@
       updateProgress();
       setBandLabels();
       renderResults();
+    
+      // ---- Email capture & send to Cloudflare Function ----
+      const emailInput = document.getElementById("emailInput");
+      const consentChk = document.getElementById("consentChk");
+      const cityInput = document.getElementById("cityInput");
+      const submitEmailBtn = document.getElementById("submitEmailBtn");
+      const submitEmailMsg = document.getElementById("submitEmailMsg");
+
+      function emailValid(val){
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(val||"").trim());
+      }
+
+      function calculationComplete(){
+        return (Object.keys(answers).length === totalItems) && ageValid();
+      }
+
+      function updateSubmitEmailEnabled(){
+        const ok = calculationComplete() && emailValid(emailInput?.value) && consentChk?.checked === true;
+        if (submitEmailBtn) submitEmailBtn.disabled = !ok;
+      }
+
+      emailInput?.addEventListener("input", updateSubmitEmailEnabled);
+      consentChk?.addEventListener("change", updateSubmitEmailEnabled);
+
+      
+        return sid;
+      }
+
+      function getSessionId(){
+        try{
+          let sid = localStorage.getItem("rtr_session_id");
+          if (!sid){
+            // crypto.randomUUID is supported on all modern browsers
+            sid = (crypto && crypto.randomUUID) ? crypto.randomUUID() :
+                  (Math.random().toString(36).slice(2) + Date.now().toString(36));
+            localStorage.setItem("rtr_session_id", sid);
+          }
+          return sid;
+        }catch(_){ return ""; }
+      }
+
+      async function sendEmailRecord(){
+        try{
+          if (!calculationComplete()) { submitEmailMsg.innerHTML = '<span class="err">Please complete the survey (including age) first.</span>'; return; }
+          const email = (emailInput?.value||"").trim();
+          if (!emailValid(email)) { submitEmailMsg.innerHTML = '<span class="err">Enter a valid email.</span>'; return; }
+          if (!consentChk?.checked){ submitEmailMsg.innerHTML = '<span class="err">Please check the consent box.</span>'; return; }
+
+          const avgs = computeSubscaleAverages();
+          const { codeStr } = makeBadgeCode(avgs);
+
+          submitEmailBtn.disabled = true;
+          submitEmailMsg.textContent = "Saving…";
+
+          const city = (cityInput?.value||"").trim();
+
+          const resp = await fetch("/api/badge", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, city, badge: codeStr, consent: true, sessionId: getSessionId(), referrer: document.referrer })
+          });
+
+          if (resp.ok){
+            submitEmailMsg.innerHTML = '<span class="ok">Saved. Check your inbox for confirmation.</span>';
+          } else {
+            const txt = await resp.text().catch(()=> "Error");
+            submitEmailMsg.innerHTML = '<span class="err">Could not save (' + (resp.status) + '). ' + txt + '</span>';
+            submitEmailBtn.disabled = false;
+          }
+        } catch(e){
+          submitEmailMsg.innerHTML = '<span class="err">Something went wrong. Please try again.</span>';
+          submitEmailBtn.disabled = false;
+        }
+      }
+
+      submitEmailBtn?.addEventListener("click", sendEmailRecord);
+
+      // Re-check enabling anytime results update
+      const _origRenderResults = renderResults;
+      renderResults = function(){
+        _origRenderResults();
+        updateSubmitEmailEnabled();
+      };
+
     </script>
-  </body>
+  
+<!-- Decode + Compare integration -->
+<script>
+// === Badge decode helpers ===
+(function(){
+  function decodeBadgeToLevels(codeStr) {
+    const code = parseInt(String(codeStr).trim(), 10);
+    if (!Number.isFinite(code) || code < 0 || code >= (typeof M!=='undefined'?M:100000))
+      return { ok:false, msg:"Code must be a 5-digit number." };
+    if (typeof B==='undefined' || typeof INV==='undefined' || typeof ORDER==='undefined') {
+      return { ok:false, msg:"Site variables missing (ORDER/B/INV/M)." };
+    }
+    let idx = (((code - B) % M) + M) % M;
+    idx = (idx * INV) % M;
+    const maxIdx = Math.pow(5, ORDER.length);
+    if (idx >= maxIdx) return { ok:false, msg:"Code not recognized (out of range)." };
+    const levels = [];
+    let t = idx;
+    for (let i = 0; i < ORDER.length; i++) { levels.push((t % 5) + 1); t = Math.floor(t / 5); }
+    const out = {}; ORDER.forEach((k, i) => out[k] = levels[i]);
+    return { ok:true, levels, byKey: out };
+  }
+  function binToRange(level) {
+    const lo = Math.max(1, level - 0.5);
+    const hi = Math.min(5, level + 0.5);
+    const mid = Math.min(5, Math.max(1, level));
+    return { lo, hi, mid };
+  }
+  function hammingDistance(a, b) { let d=0; for (let i=0;i<a.length;i++) if (a[i]!==b[i]) d++; return d; }
+
+  function attach() {
+    try {
+      const btn = (typeof checkBtn !== 'undefined' && checkBtn) || document.getElementById('checkBtn') || document.querySelector('#checkBtn,[data-check-btn]');
+      const codeInput = (typeof codeInputCheck !== 'undefined' && codeInputCheck) || document.getElementById('codeInputCheck') || document.querySelector('#codeInputCheck,[data-code-input]');
+      const out = (typeof checkOut !== 'undefined' && checkOut) || document.getElementById('checkOut') || document.querySelector('#checkOut,[data-check-out]');
+      if (!btn || !codeInput || !out) return;
+
+      if (btn.dataset.decodeBound === '1') return; // avoid double-binding
+      btn.dataset.decodeBound = '1';
+
+      btn.addEventListener('click', () => {
+        const codeStr = codeInput.value;
+        const res = decodeBadgeToLevels(codeStr);
+        if (!res.ok) { out.innerHTML = `<span class="err">${res.msg}</span>`; return; }
+        const them = res.byKey;
+
+        let myBins = [];
+        try {
+          const myAvgs = (typeof computeSubscaleAverages === 'function') ? computeSubscaleAverages() : {};
+          myBins = ORDER.map(k => Math.max(1, Math.min(5, Math.round(myAvgs[k] || 0))));
+        } catch (e) {
+          myBins = ORDER.map(_ => 3); // fallback neutral
+        }
+
+        let html = `<div class="verdict v-medium"><strong>Approximate subscale ranges from code ${String(codeStr).padStart(5,"0")}:</strong><br>`;
+        html += `<div class="decodeGrid">`;
+        ORDER.forEach((k, i) => {
+          const lvl = them[k];
+          const r = binToRange(lvl);
+          const label = (typeof SUBSCALE_LABELS!=='undefined' && SUBSCALE_LABELS[k]) ? SUBSCALE_LABELS[k] : k;
+          html += `<div><strong>${label}:</strong> ≈ ${r.lo.toFixed(1)}–${r.hi.toFixed(1)} (bin ${lvl})</div>`;
+        });
+        html += `</div>`;
+
+        const themLevels = ORDER.map(k => them[k]);
+        const d = hammingDistance(myBins, themLevels);
+        const fitLabel = d === 0 ? "Perfect match" : (d <= 2 ? "Strong match" : (d <= 4 ? "Some overlap" : "Low match"));
+        html += `<div style="margin-top:8px"><strong>Fit vs your current profile:</strong> ${fitLabel} (distance ${d}/6)</div>`;
+        html += `</div>`;
+        out.innerHTML = html;
+      });
+    } catch (e) {
+      console.warn('Decode attach failed', e);
+    }
+  }
+
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(attach, 0);
+  } else {
+    window.addEventListener('DOMContentLoaded', attach);
+  }
+})();
+</script>
+</body>
 </html>
