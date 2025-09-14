@@ -1,11 +1,18 @@
-name = "rtr-app"
-main = "worker.js"
+# wrangler.toml (for Cloudflare Pages)
+name = "ready-to-relate"
+pages_build_output_dir = "."
+
+# Good practice for Functions runtime
 compatibility_date = "2025-09-01"
 
-routes = [
-  { pattern = "readytorelate.com/api/badge", zone_name = "readytorelate.com" }
-]
+# Optional: define plain env vars here (Pages supports this format)
+[vars]
+# MAIL_FROM = "no-reply@readytorelate.com"
 
-[[kv_namespaces]]
-binding = "KV_BADGES"
-id = "YOUR_KV_NAMESPACE_ID"
+# IMPORTANT: For Pages, KV bindings are usually added in the Dashboard.
+# Some setups support the blocks below, but if deploy logs show they’re ignored,
+# bind KV in the Pages UI instead.
+
+# [[kv_namespaces]]
+# binding = "KV_BADGES"
+# id = "YOUR_NAMESPACE_ID"
