@@ -1,0 +1,11 @@
+name = "rtr-app"
+main = "worker.js"
+compatibility_date = "2025-09-01"
+
+routes = [
+  { pattern = "readytorelate.com/api/badge", zone_name = "readytorelate.com" }
+]
+
+[[kv_namespaces]]
+binding = "KV_BADGES"
+id = "YOUR_KV_NAMESPACE_ID"
