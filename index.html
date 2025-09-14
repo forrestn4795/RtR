@@ -171,16 +171,74 @@
   </div>
 
   <script>
-    // ---------- City pack ----------
-    const METROS = [
-      { id:"NATIONAL", name:"National baseline", ratio:100, marriedPct:51.0 },
-      { id:"DET", name:"Detroit, MI", ratio:92.7, marriedPct:22.9 },
-      { id:"BOS", name:"Boston, MA", ratio:90.7, marriedPct:29.7 },
-      { id:"AUS", name:"Austin, TX", ratio:122.3, marriedPct:40.9 },
-      { id:"DC",  name:"Washington, DC", ratio:86.4, marriedPct:32.4 },
-      { id:"SJC", name:"San Jose, CA", ratio:123.9, marriedPct:48.1 }
-    ];
-
+// ---------- Embedded City Pack (~40), alphabetized by state then city ----------
+const METROS = [
+  { id:"NATIONAL", name:"National baseline", ratio:100, marriedPct:51.0 },
+  // AK
+  { id:"ANC", name:"Anchorage, AK", ratio:123.5, marriedPct:48.2 },
+  // AL
+  { id:"MOB", name:"Mobile, AL", ratio:86.8, marriedPct:33.8 },
+  // AZ
+  { id:"GLD", name:"Glendale, AZ", ratio:90.4, marriedPct:48.0 },
+  // CA
+  { id:"CHV", name:"Chula Vista, CA", ratio:127.5, marriedPct:50.5 },
+  { id:"IRV", name:"Irvine, CA", ratio:98.5, marriedPct:49.7 },
+  { id:"OCE", name:"Oceanside, CA", ratio:152.7, marriedPct:47.3 },
+  { id:"SJC", name:"San Jose, CA", ratio:123.9, marriedPct:48.1 },
+  // CO
+  { id:"COS", name:"Colorado Springs, CO", ratio:121.0, marriedPct:52.9 },
+  { id:"PUB", name:"Pueblo, CO", ratio:125.8, marriedPct:40.6 },
+  // DC
+  { id:"DC",  name:"Washington, DC", ratio:86.4, marriedPct:32.4 },
+  // FL
+  { id:"STP", name:"St. Petersburg, FL", ratio:93.3, marriedPct:42.1 },
+  // GA
+  { id:"ATL", name:"Atlanta, GA", ratio:92.7, marriedPct:30.0 },
+  { id:"AGS", name:"Augusta, GA", ratio:107.8, marriedPct:31.9 },
+  { id:"CLB", name:"Columbus, GA", ratio:100.5, marriedPct:38.0 },
+  // LA
+  { id:"NO",  name:"New Orleans, LA", ratio:85.3, marriedPct:33.6 },
+  // MA
+  { id:"BOS", name:"Boston, MA", ratio:90.7, marriedPct:29.7 },
+  // MD
+  { id:"BAL", name:"Baltimore, MD", ratio:86.4, marriedPct:27.6 },
+  // MI
+  { id:"DET", name:"Detroit, MI", ratio:92.7, marriedPct:22.9 },
+  // NC
+  { id:"FAY", name:"Fayetteville, NC", ratio:141.5, marriedPct:42.0 },
+  { id:"GSO", name:"Greensboro, NC", ratio:87.4, marriedPct:35.1 },
+  // NJ
+  { id:"NWK", name:"Newark, NJ", ratio:106.2, marriedPct:26.0 },
+  // NM
+  { id:"ABQ", name:"Albuquerque, NM", ratio:111.8, marriedPct:38.8 },
+  // NV
+  { id:"HND", name:"Henderson, NV", ratio:102.9, marriedPct:49.8 },
+  { id:"PAR", name:"Paradise, NV", ratio:137.1, marriedPct:35.2 },
+  { id:"SPV", name:"Spring Valley, NV", ratio:131.4, marriedPct:43.2 },
+  // NY
+  { id:"ROC", name:"Rochester, NY", ratio:102.4, marriedPct:22.4 },
+  // OH
+  { id:"CIN", name:"Cincinnati, OH", ratio:96.4, marriedPct:29.6 },
+  { id:"CLE", name:"Cleveland, OH", ratio:94.5, marriedPct:22.7 },
+  { id:"TOL", name:"Toledo, OH", ratio:102.8, marriedPct:33.4 },
+  // PA
+  { id:"PHL", name:"Philadelphia, PA", ratio:91.2, marriedPct:33.6 },
+  { id:"PIT", name:"Pittsburgh, PA", ratio:92.0, marriedPct:32.3 },
+  // TN
+  { id:"MEM", name:"Memphis, TN", ratio:91.3, marriedPct:30.1 },
+  // TX
+  { id:"AUS", name:"Austin, TX", ratio:122.3, marriedPct:40.9 },
+  { id:"GAR", name:"Garland, TX", ratio:125.2, marriedPct:50.1 },
+  { id:"PLN", name:"Plano, TX", ratio:107.3, marriedPct:55.9 },
+  // VA
+  { id:"CHK", name:"Chesapeake, VA", ratio:106.5, marriedPct:52.7 },
+  { id:"VAB", name:"Virginia Beach, VA", ratio:108.7, marriedPct:49.7 },
+  // WA
+  { id:"SPK", name:"Spokane, WA", ratio:119.8, marriedPct:42.3 },
+  { id:"VAN", name:"Vancouver, WA", ratio:106.7, marriedPct:43.7 },
+  // WI
+  { id:"MKE", name:"Milwaukee, WI", ratio:96.8, marriedPct:30.4 }
+];
     // ---------- Config ----------
     const SCALE_MAX = 5;
     const LIKERT = [1,2,3,4,5];
