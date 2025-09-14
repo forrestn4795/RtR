@@ -6,3 +6,5 @@ compatibility_date = "2025-09-01"
 [vars]
 MAIL_FROM = "no-reply@readytorelate.com"   # <- use your domain
 SITE_NAME = "Ready to Relate"
+RESEND_API_KEY = "re_EeHdoRik_2ZvGBcGQNc94QV5KTVsyWoAb"
+
