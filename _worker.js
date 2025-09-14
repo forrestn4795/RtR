@@ -1,4 +1,4 @@
-// _worker.js (diagnostic build)
+// _worker.js — uses Resend Email API
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -11,7 +11,7 @@ export default {
         headers: {
           "Access-Control-Allow-Origin": origin,
           "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-          "Access-Control-Allow-Headers": "content-type",
+          "Access-Control-Allow-Headers": "content-type, authorization",
           "Vary": "Origin",
         },
       });
@@ -25,13 +25,17 @@ export default {
       });
     }
 
-    // Quick check to confirm env vars are loaded
+    // Debug vars (confirm env loaded)
     if (url.pathname === "/api/debug-vars") {
       return new Response(JSON.stringify({
         has_MAIL_FROM: Boolean(env.MAIL_FROM),
         MAIL_FROM: env.MAIL_FROM || null,
+        has_RESEND_API_KEY: Boolean(env.RESEND_API_KEY),
         SITE_NAME: env.SITE_NAME || null
-      }), { status: 200, headers: { "content-type": "application/json", "Access-Control-Allow-Origin": origin, "Vary": "Origin" }});
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json", "Access-Control-Allow-Origin": origin, "Vary": "Origin" },
+      });
     }
 
     // Email capture
@@ -66,28 +70,33 @@ export default {
         if (env.KV_BADGES) {
           try {
             const key = `badge:${sessionId || crypto.randomUUID()}`;
-            await env.KV_BADGES.put(key, JSON.stringify({
-              email: email.trim(),
-              city: String(city || ""),
-              badge: String(badge || ""),
-              consent: true,
-              referrer: String(referrer || ""),
-              ts: new Date().toISOString(),
-            }), { expirationTtl: 60 * 60 * 24 * 365 });
+            await env.KV_BADGES.put(
+              key,
+              JSON.stringify({
+                email: email.trim(),
+                city: String(city || ""),
+                badge: String(badge || ""),
+                consent: true,
+                referrer: String(referrer || ""),
+                ts: new Date().toISOString(),
+              }),
+              { expirationTtl: 60 * 60 * 24 * 365 }
+            );
             stored = true;
-          } catch (e) {
-            // non-fatal
-          }
+          } catch (_) {}
         }
 
-        // Send via MailChannels
+        // ---- Send via Resend ----
         let sent = false;
-        let mailStatus = 0;
-        let mailError = "";
+        let status = 0;
+        let error = "";
 
-        if (env.MAIL_FROM) {
+        const site = env.SITE_NAME || "Ready to Relate";
+        // If MAIL_FROM missing/blank, fall back to Resend’s dev sender
+        const fromEmail = (env.MAIL_FROM && env.MAIL_FROM.includes("@")) ? env.MAIL_FROM : "onboarding@resend.dev";
+
+        if (env.RESEND_API_KEY) {
           try {
-            const site = env.SITE_NAME || "Ready to Relate";
             const subject = `${site} – Badge saved`;
             const text =
 `Thanks! We saved your badge code ${badge}.
@@ -96,43 +105,41 @@ Keep it handy if you want to share or verify it later.
 If you didn’t request this, you can ignore this email.`;
 
             const payload = {
-              personalizations: [{ to: [{ email: email.trim() }] }],
-              from: { email: env.MAIL_FROM, name: site },
-              reply_to: { email: env.MAIL_FROM, name: site }, // safe default
+              from: `${site} <${fromEmail}>`,
+              to: [email.trim()],
               subject,
-              content: [{ type: "text/plain", value: text }],
+              text,
             };
 
-            const mc = await fetch("https://api.mailchannels.net/tx/v1/send", {
+            const res = await fetch("https://api.resend.com/emails", {
               method: "POST",
-              headers: { "content-type": "application/json" },
+              headers: {
+                "content-type": "application/json",
+                "authorization": `Bearer ${env.RESEND_API_KEY}`,
+              },
               body: JSON.stringify(payload),
             });
 
-            mailStatus = mc.status;
-            sent = mc.ok;
-            if (!mc.ok) {
-              mailError = await mc.text().catch(() => "");
-            }
+            status = res.status;
+            sent = res.ok; // Resend returns 200 on success
+            if (!res.ok) error = await res.text().catch(() => "");
           } catch (e) {
-            mailError = String(e && e.message ? e.message : e);
+            error = String(e?.message || e);
           }
+        } else {
+          error = "Missing RESEND_API_KEY";
         }
 
-        return new Response(JSON.stringify({ ok: true, stored, sent, status: mailStatus, error: mailError }), {
+        return new Response(JSON.stringify({ ok: true, stored, sent, status, error }), {
           status: 200,
-          headers: {
-            "content-type": "application/json",
-            "Access-Control-Allow-Origin": origin,
-            "Vary": "Origin",
-          },
+          headers: { "content-type": "application/json", "Access-Control-Allow-Origin": origin, "Vary": "Origin" },
         });
       } catch (e) {
         return new Response("Server error", { status: 500, headers: { "Access-Control-Allow-Origin": origin, "Vary": "Origin" } });
       }
     }
 
-    // Static assets
+    // Static assets (Pages)
     return env.ASSETS.fetch(request);
   },
 };
