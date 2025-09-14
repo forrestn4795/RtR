@@ -1,18 +1,8 @@
-# wrangler.toml (for Cloudflare Pages)
+# wrangler.toml (Pages + _worker.js)
 name = "ready-to-relate"
 pages_build_output_dir = "."
-
-# Good practice for Functions runtime
 compatibility_date = "2025-09-01"
 
-# Optional: define plain env vars here (Pages supports this format)
 [vars]
-# MAIL_FROM = "no-reply@readytorelate.com"
-
-# IMPORTANT: For Pages, KV bindings are usually added in the Dashboard.
-# Some setups support the blocks below, but if deploy logs show they’re ignored,
-# bind KV in the Pages UI instead.
-
-# [[kv_namespaces]]
-# binding = "KV_BADGES"
-# id = "YOUR_NAMESPACE_ID"
+MAIL_FROM = "no-reply@readytorelate.com"   # <- use your domain
+SITE_NAME = "Ready to Relate"
