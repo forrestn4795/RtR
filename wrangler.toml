@@ -4,7 +4,6 @@ pages_build_output_dir = "."
 compatibility_date = "2025-09-01"
 
 [vars]
-MAIL_FROM = "no-reply@readytorelate.com"   # <- use your domain
+MAIL_FROM = ""                      # leave blank for now (see step 2)
 SITE_NAME = "Ready to Relate"
-RESEND_API_KEY = "re_EeHdoRik_2ZvGBcGQNc94QV5KTVsyWoAb"
-
+RESEND_API_KEY = "re_your_NEW_key_here"
