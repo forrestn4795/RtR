@@ -75,7 +75,7 @@ export default {
           const key = `rl:${ip}:${bucket}`;
           const count = parseInt((await env.KV_BADGES.get(key)) || "0", 10);
 
-          if (count >= 2) {
+          if (count >= 20) {
             return resp(200, { ok:true, sent:false, status:429 }); // soft error for client
           }
           await env.KV_BADGES.put(key, String(count + 1), { expirationTtl: 3600 });
