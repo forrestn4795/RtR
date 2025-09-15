@@ -5,3 +5,8 @@ compatibility_date = "2025-09-01"
 [vars]
 MAIL_FROM = "no-reply@readytorelate.com"
 SITE_NAME = "Ready to Relate"
+
+[[kv_namespaces]]
+binding = "KV_BADGES"
+id = "3e22dfe4d00b4990badeb611c958c437"
+# preview_id = "PASTE_PREVIEW_ID_IF_YOU_CREATED_ONE"
